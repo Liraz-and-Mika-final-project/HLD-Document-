@@ -1,0 +1,212 @@
+
+   
+Smart Milk: High Level Design 
+Team: Smart milk container 
+Members: Mika Shahar and Liraz Poldian
+Question 1:
+1. What are the system’s main components? 
+This is a high-level overview of the main components that your system will be composed of. A drawing of squares and arrows between them might be most adequate here. 
+I recommend draw.io for this, but feel free to use any other tool you find useful.
+
+Our system’s Main Components
+Milk Weight Service
+Responsibility:
+Collects weight data for a specific container.
+Associates the data with the container’s unique ID.
+Data:
+Container ID (e.g., containerId: 123).
+Raw and processed milk level data.
+Interaction:
+Publishes data to the Analysis Service with the container ID.
+ 
+2. MQTT Broker Service
+Responsibility:
+Acts as the communication layer between the Arduino and other services.
+Handles real-time messaging for weight data and alerts.
+Data:
+Raw weight data from the Arduino (e.g., { weight: 1200, unit: "grams" }).
+Alerts (e.g., { message: "Low milk level!" }).
+Interaction:
+Receives data from the Arduino and forwards it to the Milk Weight Service.
+Sends alerts to the User Service and UI Service.
+3. Analysis Service
+Responsibility:
+Analyzes milk level trends for a specific container (e.g., usage rate, time until empty).
+Generates insights (e.g., "You’ll run out of milk in 2 days").
+Sends analysis results to the User Service and UI Service.
+Data:
+
+
+Container ID.
+List of user IDs associated with the container.
+Analysis results.
+Interaction:
+Receives processed milk level data from the Milk Weight Service.
+Sends analysis results to the User Service for each user.
+4.  User Service
+Responsibility:
+Manages user-container relationships.
+Stores which users are associated with which containers.
+Handles notifications for all users of a container.
+Data:
+User-container mapping (e.g., { userId: 1, containerId: 123 }).
+User preferences (e.g., notification thresholds and methods).
+Interaction:
+Provides APIs for adding/removing users from containers.
+Sends notifications to all users of a container when the milk level is low.
+ 
+ 
+5. UI Service
+Responsibility:
+Provides a user interface for monitoring milk levels and receiving alerts.
+Displays analysis results and user preferences.
+Data:
+Real-time milk level data.
+Analysis results.
+User preferences.
+Interaction:
+Receives data from the Analysis Service and User Service.
+Subscribes to MQTT topics for real-time updates.
+6. Database
+Responsibility:
+Stores historical milk level data, user profiles, and preferences.
+Data:
+User data (e.g., users table: userId, name, email, notificationThreshold, notificationMethod).
+Milk level data (e.g., milkLevels table: timestamp, milkLevel, userId).
+Analysis results (e.g., analysis table: userId, usageRate, timeUntilEmpty).
+ 
+How the Services Work Together
+The Arduino sends raw weight data to the MQTT Broker.
+The Milk Weight Service processes the data and sends it to the Analysis Service.
+The Analysis Service analyzes the data and sends results to the User Service and UI Service.
+The User Service stores user preferences and sends notifications based on the analysis.
+The UI Service displays real-time data and analysis results to the user.
+ 
+REST API for User Service
+1. Update User Preferences
+Endpoint: PUT /api/users/{userId}/preferences
+Request Body:
+{
+  "notificationThreshold": 20,
+  "notificationMethod": "email"
+}
+Response:
+{
+  "message": "Preferences updated successfully",
+  "userId": 1
+}
+2. Get Analysis Results
+Endpoint: GET /api/users/{userId}/analysis
+Response:
+{
+  "userId": 1,
+  "usageRate": "10% per day",
+  "timeUntilEmpty": "2 days"
+}
+3. Get User Profile
+Endpoint: GET /api/users/{userId}
+Response:
+{
+  "userId": 1,
+  "name": "John",
+  "email": "john@example.com",
+  "notificationThreshold": 20,
+  "notificationMethod": "email"
+}
+ 
+4. Create User
+Endpoint: POST /api/users
+Request Body:
+{
+  "name": "John",
+  "email": "john@example.com",
+  "notificationThreshold": 20,
+  "notificationMethod": "email"
+}
+Response:
+{
+  "message": "User created successfully",
+  "userId": 1
+}
+
+Question 2: 
+How will the main users’ use cases look alike?
+Here you would think about the actual persona that is going to use the system and draw in high level how they will interact with the system and what will be the flow of their requests within the system. Using a sequence diagram is a win here. 
+
+
+
+
+2. Main Users and Use Cases
+User Persona:
+Home User: A person who wants to ensure they never run out of milk at home.
+Office Manager: Someone responsible for maintaining milk supply in an office kitchen.
+Use Cases:
+Use Case 1: Monitor Milk Level:
+The user views the current milk level on the website.
+Use Case 2: Set Notification Preferences:
+The user sets their preferred notification method (by email) and milk threshold.
+Use Case 3: Receive Low Milk Alert:
+The user receives a notification when the milk level is low.
+Use Case 4: Update Client Information:
+The user updates their contact information or preferences.
+
+
+Explanation of the Sequence Diagram
+User Opens Website:
+The user visits the website to check the milk level.
+The website sends a request to the API Gateway to fetch the milk level.
+The API Gateway forwards the request to the Data Processing Service.
+The Data Processing Service subscribes to the MQTT Broker to get real-time sensor data.
+Fetch Milk Level:
+The Milk Level Sensor Service reads data from the Arduino and publishes it to the MQTT Broker.
+The Data Processing Service processes the data and returns the milk level to the API Gateway.
+The API Gateway sends the milk level to the website, which displays it to the user.
+Set Notification Preferences:
+The user updates their notification preferences on the website.
+The website sends the updated preferences to the API Gateway.
+The API Gateway saves the preferences in the Client Database.
+The website confirms the update to the user.
+Receive Low Milk Alert:
+When the milk level is low, the Data Processing Service sends an alert to the Notification Service.
+The Notification Service fetches the user’s preferences from the Client Database.
+The Notification Service sends a personalized notification (by Email) to the user.
+
+Question 3:
+What is the Front End (i.e. UI) technology you are aiming to use? does it have its own architecture (e.g. React usually comes with a backed nodeJS behind it, while native JS doesn’t)
+
+Answer 3:
+For the front-end of the Smart Milk Container project, we plan to use React.js as the primary UI technology. React is a component-based JavaScript library that allows for the creation of dynamic and reusable user interfaces. It does not inherently require a backend, but it is often paired with Node.js for full-stack development. In this project, React will be used as a standalone front-end to:
+Display real-time milk level data received from the MQTT broker.
+Show alerts when the milk level is low.
+Provide a simple and intuitive user interface for monitoring the system.
+React will communicate directly with the MQTT broker using the mqtt.js library, eliminating the need for a dedicated backend. This approach simplifies the architecture while maintaining scalability for future enhancements.
+
+Question 4:
+Mocks for main pages:
+This is where you draw and sketch very high-level drawings of the main screens that the main users are expected to work with. 
+This needs to give a high-level perspective as to how the system will look. 
+Don’t worry, you don’t need to go into details and you are not totally committed to this screen looks in the future
+Power point, Canva, photoshop, figma - are all legit tools for this part..
+
+Main pages to mock up 
+
+Home Page:
+Displays the current milk level.
+Shows a visual indicator (e.g., a progress bar or icon) for the milk level.
+Includes a button to set notification preferences.
+Notification Preferences Page:
+Allows users to set their preferred notification method (e.g., email, SMS).
+Lets users set a custom milk threshold for alerts.
+Includes a "Save" button to update preferences.
+Low Milk Alert Page:
+Displays a warning message when the milk level is low.
+Provides options to acknowledge the alert or dismiss it.
+User Profile Page:
+Allows users to update their contact information (e.g., email, phone number).
+Includes a "Save" button to update the profile.
+
+
+
+
+
+
